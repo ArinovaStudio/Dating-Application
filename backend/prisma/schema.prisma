@@ -7,3 +7,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id String @id @default(uuid())
+  username String @unique
+  email String @unique
+  password String
+  role Role @default(USER)
+  
+  isVerified Boolean @default(false)
+  isPaidMember Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  profile Profile?
+  wallet Wallet?
+}
+
+model Wallet {
+  id String @id @default(uuid())
+  userId String @unique
+  balance Int @default(0)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  updatedAt DateTime @updatedAt
+}
+
+model Otp {
+  id String @id @default(uuid())
+  email String
+  code String
+  expiresAt DateTime
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model Profile {
+  id String @id @default(uuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name String
+  phone String?
+  age Int
+  gender Gender
+  interests Gender[]
+  language String[]
+  bio String?
+  avatar String?
+  updatedAt DateTime @updatedAt
+}
