@@ -3,16 +3,22 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import app from './app';
+import http from 'http';
 import { prisma } from './config/prisma';
+import { initSocket } from './socket';
 
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
+    const server = http.createServer(app);
+
+    initSocket(server);
+
     await prisma.$connect();
     console.log('Database connected successfully');
 
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
     

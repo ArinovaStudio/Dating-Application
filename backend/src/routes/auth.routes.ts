@@ -28,7 +28,10 @@ router.post(
   login
 );
 
-router.post('/logout', logout);
+router.post(
+  '/logout', 
+  logout
+);
 
 // otp routes
 router.post(

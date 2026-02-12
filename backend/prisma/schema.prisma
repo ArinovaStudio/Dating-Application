@@ -27,6 +27,8 @@ model User {
   profile Profile?
   wallet Wallet?
   subscription Subscription?
+  participants Participant[]
+  messages Message[]
 }
 
 model Wallet {
@@ -73,6 +75,7 @@ model Plan {
   name String @unique
   price Float
   durationDays Int
+  tokensIncluded Int @default(0)
   
   messageDelay Int @default(0)
   maxImagesPerDay Int @default(5)
@@ -106,4 +109,51 @@ model SystemConfig {
   callCostPerMinute Int @default(1)
   defaultFreeDelay Int @default(8)
   updatedAt DateTime @updatedAt
+}
+
+enum ConversationType {
+  PRIVATE
+  GROUP
+}
+
+model Conversation {
+  id String @id @default(uuid())
+  type ConversationType @default(PRIVATE)
+  name String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants Participant[]
+  messages Message[]
+}
+
+model Participant {
+  id String @id @default(uuid())
+  userId String
+  conversationId String
+  joinedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  
+  @@unique([userId, conversationId])
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+}
+
+model Message {
+  id String @id @default(uuid())
+  senderId String
+  conversationId String
+  content String?
+  type MessageType @default(TEXT)
+  createdAt DateTime @default(now())
+  
+  sender User @relation(fields: [senderId], references: [id])
+  conversation Conversation @relation(fields: [conversationId], references: [id])
 }

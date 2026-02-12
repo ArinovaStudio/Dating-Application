@@ -9,6 +9,7 @@ import globalErrorHandler from './middlewares/error.middleware';
 // routes
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
+import subscriptionRoutes from "./routes/subscription.routes";
 
 const app = express();
 
@@ -24,7 +25,7 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
-
+app.use('/uploads', express.static('public/uploads'));
 
 app.get('/', (req, res) => {
   res.status(200).json({ success: true, message: 'Backend is running successfully' });
@@ -32,6 +33,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

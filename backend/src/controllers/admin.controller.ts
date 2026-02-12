@@ -6,7 +6,8 @@ type IdParams = { id: string };
 
 export const createPlan = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, price, durationDays, messageDelay, maxImagesPerDay, canSendVideo, canAudioCall, canVideoCall } = req.body;
+    const { name, price, durationDays, tokensIncluded, messageDelay, 
+    maxImagesPerDay, canSendVideo, canAudioCall, canVideoCall } = req.body;
 
     const existingPlan = await prisma.plan.findUnique({ where: { name } });
     if (existingPlan){
@@ -18,6 +19,7 @@ export const createPlan = async (req: Request, res: Response, next: NextFunction
         name,
         price,
         durationDays,
+        tokensIncluded,
         messageDelay,
         maxImagesPerDay,
         canSendVideo,

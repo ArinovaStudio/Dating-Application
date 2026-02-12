@@ -7,7 +7,10 @@ import { validateRequest } from '../middlewares/validate-request';
 
 const router = Router();
 
-router.get('/plans', getAllPlans);
+router.get(
+    '/plans', 
+    getAllPlans
+);
 
 router.use(protect);
 router.use(restrictTo('ADMIN'));

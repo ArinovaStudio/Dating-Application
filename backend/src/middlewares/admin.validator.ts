@@ -13,6 +13,10 @@ export const adminValidators = {
     body('durationDays')
     .isInt({ min: 1 })
     .withMessage('Duration must be at least 1 day'),
+
+    body('tokensIncluded')
+    .isInt({ min: 0 })
+    .withMessage('Tokens included must be a positive number'),
       
     body('messageDelay')
     .optional()
@@ -57,6 +61,11 @@ export const adminValidators = {
     .optional()
     .isInt({ min: 1 })
     .withMessage('Duration must be at least 1 day'),
+
+    body('tokensIncluded')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Tokens included must be a positive number'),
 
     body('messageDelay')
     .optional()
