@@ -26,6 +26,7 @@ model User {
   
   profile Profile?
   wallet Wallet?
+  subscription Subscription?
 }
 
 model Wallet {
@@ -64,5 +65,45 @@ model Profile {
   language String[]
   bio String?
   avatar String?
+  updatedAt DateTime @updatedAt
+}
+
+model Plan {
+  id String @id @default(uuid())
+  name String @unique
+  price Float
+  durationDays Int
+  
+  messageDelay Int @default(0)
+  maxImagesPerDay Int @default(5)
+  canSendVideo Boolean @default(false)
+  canAudioCall Boolean @default(false)
+  canVideoCall Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id String @id @default(uuid())
+  userId String @unique
+  planId String
+  
+  startDate DateTime @default(now())
+  endDate DateTime
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  plan Plan @relation(fields: [planId], references: [id])
+}
+
+
+model SystemConfig {
+  id String @id @default("config")
+  callCostPerMinute Int @default(1)
+  defaultFreeDelay Int @default(8)
   updatedAt DateTime @updatedAt
 }
