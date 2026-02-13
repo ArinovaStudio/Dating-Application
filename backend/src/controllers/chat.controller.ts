@@ -106,16 +106,18 @@ export const getMyConversations = async (req: any, res: Response, next: NextFunc
       whereClause = {
         ...whereClause,
         OR: [
-          { 
-            type: 'GROUP', 
-            name: { contains: String(search), mode: 'insensitive' } 
-          },
+          { type: 'GROUP', 
+            name: { contains: String(search), mode: 'insensitive' }},
           {
             type: 'PRIVATE',
             participants: {
               some: {
-                userId: { not: myId }, // The other person
-                user: { username: { contains: String(search), mode: 'insensitive' } }
+                userId: { not: myId },
+                user: { OR: [
+                  { username: { contains: String(search), mode: 'insensitive' } },
+                  { profile: { name: { contains: String(search), mode: 'insensitive' } } },
+                  { savedBy: { some: { userId: myId, name: { contains: String(search), mode: 'insensitive' }}}}
+                ] }
               }
             }
           }
@@ -139,7 +141,11 @@ export const getMyConversations = async (req: any, res: Response, next: NextFunc
                 username: true, 
                 isOnline: true, 
                 lastSeen: true, 
-                profile: { select: { avatar: true } } 
+                profile: { select: { name: true, avatar: true } },
+                savedBy: {
+                  where: { userId: myId },
+                  select: { name: true }
+                }
               }
             }
           }
@@ -156,7 +162,10 @@ export const getMyConversations = async (req: any, res: Response, next: NextFunc
 
       if (conv.type === 'PRIVATE' && conv.participants.length > 0) {
         const otherUser = conv.participants[0].user;
-        displayName = otherUser.username;
+        
+        const contactName = otherUser.savedBy && otherUser.savedBy.length > 0 ? otherUser.savedBy[0].name : null;
+        
+        displayName = contactName || otherUser.profile?.name || otherUser.username;
         displayAvatar = otherUser.profile?.avatar || null;
         isOnline = otherUser.isOnline;
         targetUserId = otherUser.id;
@@ -169,7 +178,7 @@ export const getMyConversations = async (req: any, res: Response, next: NextFunc
         avatar: displayAvatar,
         isOnline,
         targetUserId, 
-        latestMessage: conv.messages[0],
+        latestMessage: conv.messages[0] || null,
         updatedAt: conv.updatedAt
       };
     });
@@ -215,39 +224,100 @@ export const sendMessage = async (req: any, res: Response, next: NextFunction) =
   try {
     const senderId = req.user.id;
     const { conversationId, content, type } = req.body;
-    const isPaid = req.user.isPaidMember;
 
-    const isParticipant = await prisma.participant.findUnique({
-      where: { userId_conversationId: { userId: senderId, conversationId } }
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: true }
     });
 
-    if (!isParticipant){
-        return next(new AppError('You are not in this chat', 403));
+    if (!conversation) {
+      return next(new AppError('Conversation not found', 404));
     }
+
+    const isParticipant = conversation.participants.some(p => p.userId === senderId);
+    if (!isParticipant) {
+      return next(new AppError('You are not in this chat', 403));
+    }
+
+    // block check
+    if (conversation.type === 'PRIVATE') {
+      const targetParticipant = conversation.participants.find(p => p.userId !== senderId);
+      
+      if (targetParticipant) {
+        const blockExists = await prisma.block.findFirst({
+          where: {
+            OR: [
+              { blockerId: senderId, blockedId: targetParticipant.userId },
+              { blockerId: targetParticipant.userId, blockedId: senderId }
+            ]
+          }
+        });
+
+        if (blockExists) {
+          throw new AppError('Cannot send message', 403);
+        }
+      }
+    }
+
+    const userWithPlan = await prisma.user.findUnique({
+      where: { id: senderId },
+      include: {
+        subscription: {
+          where: { isActive: true },
+          include: { plan: true }
+        }
+      }
+    });
+
+    const isPaid = userWithPlan?.isPaidMember || false;
+    const activePlan = userWithPlan?.subscription?.plan;
+
+    const maxImages = activePlan ? activePlan.maxImagesPerDay : 5;
+    const canSendVideo = activePlan ? activePlan.canSendVideo : false;
+    
+    const messageDelay = activePlan ? activePlan.messageDelay * 1000 : Math.floor(Math.random() * (20000 - 8000 + 1) + 8000);
 
     let finalContent = content;
     let finalType = type || 'TEXT';
 
     if (finalType === 'TEXT') {
       if (PHONE_REGEX.test(content) || URL_REGEX.test(content)) {
-        return next(new AppError('Sharing phone numbers or links is prohibited.', 400));
+        throw new AppError('Sharing phone numbers or links is prohibited.', 400);
       }
     }
 
     if (req.file) {
-      finalContent = `/uploads/${req.file.destination.split('/').pop()}/${req.file.filename}`;
+      const folderName = req.file.destination.split(/[\\/]/).pop();
+      finalContent = `/uploads/${folderName}/${req.file.filename}`;
+      
       if (req.file.mimetype.startsWith('image')) finalType = 'IMAGE';
       else if (req.file.mimetype.startsWith('video')) finalType = 'VIDEO';
       else if (req.file.mimetype.startsWith('audio')) finalType = 'AUDIO';
 
-      if (!isPaid && (finalType === 'VIDEO' || finalType === 'AUDIO')) {
-        return next(new AppError('Upgrade to Premium to send Videos/Audio!', 403));
-      }
-    }
+      if (finalType === 'IMAGE') {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
 
-    let delay = 0;
-    if (!isPaid) {
-      delay = Math.floor(Math.random() * (20000 - 8000 + 1) + 8000); // 8-20s
+        const imagesSentToday = await prisma.message.count({
+          where: {
+            senderId,
+            type: 'IMAGE',
+            createdAt: { gte: startOfDay }
+          }
+        });
+
+        if (imagesSentToday >= maxImages) {
+          throw new AppError(`You've reached your limit of ${maxImages} images per day. Upgrade your plan!`, 403);
+        }
+      }
+
+      if (finalType === 'VIDEO' && !canSendVideo) {
+        throw new AppError('Your current plan does not allow sending videos. Please upgrade!', 403);
+      }
+
+      if (finalType === 'AUDIO' && !isPaid) {
+        throw new AppError('Upgrade to Premium to send Audio messages!', 403);
+      }
     }
 
     const processMessage = async () => {
@@ -265,8 +335,8 @@ export const sendMessage = async (req: any, res: Response, next: NextFunction) =
       io.to(conversationId).emit('receive_message', newMessage);
     };
 
-    if (delay > 0) {
-      setTimeout(async () => { await processMessage(); }, delay);
+    if (messageDelay > 0) {
+      setTimeout(async () => { await processMessage(); }, messageDelay);
     } else {
       await processMessage();
     }
@@ -274,6 +344,11 @@ export const sendMessage = async (req: any, res: Response, next: NextFunction) =
     res.status(201).json({ success: true, message: 'Message sent' });
 
   } catch (error) {
+    if (req.file) {
+      const folderName = req.file.destination.split(/[\\/]/).pop();
+      const dbFormattedPath = `/uploads/${folderName}/${req.file.filename}`;
+      deleteFile(dbFormattedPath);
+    }
     next(error);
   }
 };

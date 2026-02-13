@@ -44,5 +44,4 @@ router.delete('/group/:conversationId/remove', removeGroupMember);
 router.put('/group/:conversationId/role', updateGroupRole);
 router.delete('/group/:conversationId/leave', leaveGroup);
 
-
 export default router;

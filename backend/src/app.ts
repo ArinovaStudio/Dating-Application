@@ -9,6 +9,7 @@ import globalErrorHandler from './middlewares/error.middleware';
 // routes
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
+import userRoutes from './routes/user.routes';
 import subscriptionRoutes from "./routes/subscription.routes";
 import chatRoutes from './routes/chat.routes';
 
@@ -34,8 +35,9 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/subscription', subscriptionRoutes);
-app.use("/api/chat", chatRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
