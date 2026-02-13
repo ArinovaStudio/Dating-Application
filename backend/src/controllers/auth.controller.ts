@@ -5,6 +5,7 @@ import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { sendEmail } from '../utils/sendEmail';
 import { emailTemplates } from '../templates/email.templates';
+import { getIO } from '../socket';
 
 const createSendToken = (user: any, statusCode: number, res: Response, message: string) => {
   const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
@@ -167,15 +168,41 @@ export const completeProfile = async (req: any, res: Response, next: NextFunctio
   }
 };
 
-export const logout = (req: Request, res: Response) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-  
-  res.status(200).json({ 
-    success: true, 
-    message: 'Logged out successfully' 
-  });
+export const logout = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user.id;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        isOnline: false, 
+        lastSeen: new Date() 
+      }
+    });
+
+    const io = getIO();
+
+    io.emit('user_status', { userId, isOnline: false, lastSeen: new Date() });
+
+    const sockets = await io.fetchSockets();
+    for (const socket of sockets) {
+      if (socket.data.userId === userId) {
+        socket.disconnect(true);
+      }
+    }
+
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Logged out successfully' 
+    });
+
+  } catch (error) {
+    next(error);
+  }
 };

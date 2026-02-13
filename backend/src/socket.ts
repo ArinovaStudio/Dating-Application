@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import http from 'http';
+import { prisma } from './config/prisma';
 
 let io: Server;
 
@@ -12,15 +13,35 @@ export const initSocket = (server: http.Server) => {
   });
 
   io.on('connection', (socket) => {
+    socket.on('register_user', async (userId: string) => { // userId need to pass from frontend
+      socket.data.userId = userId;
 
-    // Join a specific chat room
-    socket.on('join_room', (roomId) => {
-      socket.join(roomId);
-      console.log(`User ${socket.id} joined room ${roomId}`);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { isOnline: true }
+      });
+
+      io.emit('user_status', { userId, isOnline: true });
+      console.log(`User Online: ${userId}`);
     });
 
-    socket.on('disconnect', () => {
-      console.log('User Disconnected', socket.id);
+    socket.on('join_room', (roomId) => { // conversationId need to pass from frontend
+      socket.join(roomId);
+    });
+
+    socket.on('disconnect', async () => {
+      const userId = socket.data.userId;
+      
+      if (userId) {
+
+        await prisma.user.update({
+          where: { id: userId },
+          data: { isOnline: false, lastSeen: new Date() }
+        });
+
+        io.emit('user_status', { userId, isOnline: false, lastSeen: new Date() });
+        console.log(`User Offline: ${userId}`);
+      }
     });
   });
 

@@ -29,7 +29,8 @@ router.post(
 );
 
 router.post(
-  '/logout', 
+  '/logout',
+  protect, 
   logout
 );
 

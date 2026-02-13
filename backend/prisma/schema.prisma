@@ -21,6 +21,8 @@ model User {
   
   isVerified Boolean @default(false)
   isPaidMember Boolean @default(false)
+  isOnline Boolean @default(false)
+  lastSeen DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
@@ -120,6 +122,8 @@ model Conversation {
   id String @id @default(uuid())
   type ConversationType @default(PRIVATE)
   name String?
+  description String?
+  groupAvatar String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -127,10 +131,16 @@ model Conversation {
   messages Message[]
 }
 
+enum ParticipantRole {
+  MEMBER
+  ADMIN
+}
+
 model Participant {
   id String @id @default(uuid())
   userId String
   conversationId String
+  role ParticipantRole @default(MEMBER)
   joinedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
@@ -152,6 +162,7 @@ model Message {
   conversationId String
   content String?
   type MessageType @default(TEXT)
+  isDeleted Boolean @default(false)
   createdAt DateTime @default(now())
   
   sender User @relation(fields: [senderId], references: [id])
