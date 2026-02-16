@@ -4,7 +4,7 @@ import { AppError } from '../utils/AppError';
 
 export const addContact = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const { contactId, name } = req.body;
+    const { contactId, name } = req.body;  // contactId = userId of target user
     const myId = req.user.id;
 
     if (myId === contactId) {

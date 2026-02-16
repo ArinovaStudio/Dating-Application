@@ -206,3 +206,73 @@ export const logout = async (req: any, res: Response, next: NextFunction) => {
     next(error);
   }
 };
+
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return next(new AppError('No user found with this email', 404));
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); 
+
+    await prisma.otp.deleteMany({ where: { email } });
+
+    await prisma.otp.create({
+      data: { email, code: otpCode, expiresAt }
+    });
+
+    const emailSent = await sendEmail(
+      email, 
+      'Reset Your Password', 
+      emailTemplates.forgotPassword(otpCode)
+    );
+
+    if (!emailSent) {
+      return next(new AppError("Failed to send email", 500));
+    }
+
+    res.status(200).json({ success: true, message: 'Password reset code sent to email' });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const otpRecord = await prisma.otp.findFirst({ where: { email } });
+
+    if (!otpRecord) {
+      return next(new AppError('Invalid or expired OTP', 400));
+    }
+
+    if (otpRecord.code !== otp) {
+      return next(new AppError('Invalid OTP', 400));
+    }
+
+    if (otpRecord.expiresAt < new Date()) {
+      return next(new AppError('OTP has expired', 400));
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { email },
+      data: { password: hashedPassword }
+    });
+
+    await prisma.otp.deleteMany({ where: { email } });
+
+    res.status(200).json({ success: true, message: 'Password reset successfully' });
+
+  } catch (error) {
+    next(error);
+  }
+};

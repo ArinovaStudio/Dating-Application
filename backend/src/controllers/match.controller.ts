@@ -142,7 +142,6 @@ export const searchRandomMatch = async (req: any, res: Response, next: NextFunct
     }
 
     matchQueue.enqueue(userId, socketId, myGender);
-    matchQueue.print();
 
     res.status(200).json({ success: true, matchFound: false, message: 'You are now in the queue for a match' });
 

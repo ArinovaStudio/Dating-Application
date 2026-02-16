@@ -12,12 +12,12 @@ const router = Router();
 
 router.use(protect);
 
-// match (list of matches) apis
-router.get('/matches', getOnlineMatches);
+// match apis
+router.get('/matches', getOnlineMatches); // list of matches
 router.post('/matches/search', searchRandomMatch);
 router.post('/matches/cancel', cancelSearch);
 
-// contacts api
+// contacts / friends api
 router.get('/contacts', getContacts);
 router.post('/contacts', addContact);
 router.put('/contacts/:contactId', updateContactName);

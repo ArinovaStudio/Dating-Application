@@ -28,5 +28,15 @@ export const authValidators = {
     body('age').isInt({ min: 18 }).withMessage('Age must be at least 18'),
     body('interests').isArray().withMessage('Interests must be an array'),
     body('language').isArray().withMessage('Languages must be an array'),
+  ],
+
+  forgotPassword: [
+    body('email').isEmail().withMessage('Please provide a valid email')
+  ],
+
+  resetPassword: [
+    body('email').notEmpty().isEmail().withMessage('Valid email is required'),
+    body('otp').notEmpty().isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+    body('newPassword').isLength({ min: 6 }).withMessage('Password must be 6+ chars')
   ]
 };
