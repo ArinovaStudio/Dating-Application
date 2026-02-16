@@ -13,6 +13,10 @@ export const initSocket = (server: http.Server) => {
   });
 
   io.on('connection', (socket) => {
+    socket.on('get_my_socketId', () => {
+        socket.emit('my_socketId', socket.id);
+    });
+
     socket.on('register_user', async (userId: string) => { // userId need to pass from frontend
       socket.data.userId = userId;
 
