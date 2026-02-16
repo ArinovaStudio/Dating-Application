@@ -12,6 +12,7 @@ import adminRoutes from './routes/admin.routes';
 import userRoutes from './routes/user.routes';
 import subscriptionRoutes from "./routes/subscription.routes";
 import chatRoutes from './routes/chat.routes';
+import cronRoutes from './routes/cron.routes';
 import { seedUsers } from './controllers/seed.controller';
 
 const app = express();
@@ -39,6 +40,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/chat', chatRoutes);
+
+// cron job
+app.use('/api/cron', cronRoutes);
 
 // seeding 
 // app.post('/api/seed', seedUsers);

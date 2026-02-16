@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { protect } from '../middlewares/auth.middleware';
+import { protect, restrictToPaid } from '../middlewares/auth.middleware';
 import { addContact, removeContact, toggleFavorite, getContacts, updateContactName } from '../controllers/contact.controller';
 import { blockUser, unblockUser } from '../controllers/block.controller';
 import { cancelSearch, getOnlineMatches, searchRandomMatch } from '../controllers/match.controller';
@@ -18,11 +18,11 @@ router.post('/matches/search', searchRandomMatch);
 router.post('/matches/cancel', cancelSearch);
 
 // contacts / friends api
-router.get('/contacts', getContacts);
-router.post('/contacts', addContact);
-router.put('/contacts/:contactId', updateContactName);
-router.delete('/contacts/:contactId', removeContact);
-router.patch('/contacts/:contactId/favorite', toggleFavorite);
+router.get('/contacts', restrictToPaid, getContacts);
+router.post('/contacts', restrictToPaid, addContact);
+router.put('/contacts/:contactId', restrictToPaid, updateContactName);
+router.delete('/contacts/:contactId', restrictToPaid, removeContact);
+router.patch('/contacts/:contactId/favorite', restrictToPaid, toggleFavorite);
 
 // block api
 router.post('/blocks', blockUser);

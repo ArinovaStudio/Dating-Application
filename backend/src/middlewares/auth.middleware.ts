@@ -52,3 +52,29 @@ export const restrictTo = (...roles: string[]) => {
     next();
   };
 };
+
+export const restrictToPaid = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const user = req.user;
+
+    if (user.isPaidMember) {
+      return next();
+    }
+
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        userId: user.id,
+        isActive: true,
+        endDate: { gte: new Date() }
+      }
+    });
+
+    if (activeSubscription) {
+      return next();
+    }
+
+    return next(new AppError('This feature is for Premium members only. Please upgrade your plan.', 403));
+  } catch (error) {
+    next(error);
+  }
+};
