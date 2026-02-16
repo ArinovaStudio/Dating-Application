@@ -274,8 +274,11 @@ export const sendMessage = async (req: any, res: Response, next: NextFunction) =
 
     const maxImages = activePlan ? activePlan.maxImagesPerDay : 5;
     const canSendVideo = activePlan ? activePlan.canSendVideo : false;
+
+    const systemConfig = await prisma.systemConfig.findUnique({ where: { id: 'config' } });
+    const defaltFreeDelay = systemConfig ? systemConfig.defaultFreeDelay : Math.floor(Math.random() * (20000 - 8000 + 1) + 8000);
     
-    const messageDelay = activePlan ? activePlan.messageDelay * 1000 : Math.floor(Math.random() * (20000 - 8000 + 1) + 8000);
+    const messageDelay = activePlan ? activePlan.messageDelay * 1000 : defaltFreeDelay * 1000;
 
     let finalContent = content;
     let finalType = type || 'TEXT';

@@ -87,6 +87,25 @@ export const deletePlan = async (req: Request<IdParams>, res: Response, next: Ne
   }
 };
 
+export const getSystemConfig = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let config = await prisma.systemConfig.findUnique({ where: { id: 'config' }});
+
+    if (!config) {
+      config = await prisma.systemConfig.create({
+        data: {
+          id: 'config',
+          callCostPerMinute: 1, // 1 token
+          defaultFreeDelay: 8 
+        }
+      });
+    }
+
+    res.status(200).json({ success: true, config });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const updateSystemConfig = async (req: Request, res: Response, next: NextFunction) => {
   try {

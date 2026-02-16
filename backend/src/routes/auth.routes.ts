@@ -6,47 +6,13 @@ import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-router.post(
-  '/register', 
-  authValidators.register, 
-  validateRequest, 
-  register
-);
-
-router.post(
-  '/complete-profile',
-  protect,
-  authValidators.completeProfile,
-  validateRequest,
-  completeProfile
-);
-
-router.post(
-  '/login', 
-  authValidators.login, 
-  validateRequest, 
-  login
-);
-
-router.post(
-  '/logout',
-  protect, 
-  logout
-);
+router.post('/register', authValidators.register, validateRequest, register);
+router.post('/complete-profile', protect, authValidators.completeProfile, validateRequest, completeProfile );
+router.post('/login', authValidators.login, validateRequest, login);
+router.post('/logout', protect, logout );
 
 // otp routes
-router.post(
-  '/otp/send', 
-  authValidators.otp, 
-  validateRequest, 
-  sendOtp
-);
-
-router.post(
-  '/otp/verify', 
-  authValidators.verifyOtp, 
-  validateRequest, 
-  verifyOtp
-);
+router.post('/otp/send', authValidators.otp, validateRequest, sendOtp);
+router.post('/otp/verify', authValidators.verifyOtp, validateRequest, verifyOtp);
 
 export default router;

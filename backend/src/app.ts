@@ -12,6 +12,7 @@ import adminRoutes from './routes/admin.routes';
 import userRoutes from './routes/user.routes';
 import subscriptionRoutes from "./routes/subscription.routes";
 import chatRoutes from './routes/chat.routes';
+import { seedUsers } from './controllers/seed.controller';
 
 const app = express();
 
@@ -38,6 +39,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/chat', chatRoutes);
+
+// seeding 
+// app.post('/api/seed', seedUsers);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

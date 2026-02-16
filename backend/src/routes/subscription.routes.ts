@@ -8,15 +8,8 @@ const router = Router();
 
 router.use(protect);
 
-router.get(
-    '/me', 
-    getMySubscription
-);
-
-router.get(
-    "/wallet",
-    getWallet
-);
+router.get( '/me', getMySubscription );
+router.get( "/wallet", getWallet);
 
 router.post(
     '/subscribe',

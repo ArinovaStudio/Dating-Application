@@ -2,10 +2,18 @@ import { Router } from 'express';
 import { protect } from '../middlewares/auth.middleware';
 import { addContact, removeContact, toggleFavorite, getContacts, updateContactName } from '../controllers/contact.controller';
 import { blockUser, unblockUser } from '../controllers/block.controller';
+import { getOnlineMatches } from '../controllers/match.controller';
+import { getMyProfile, updateProfile } from '../controllers/user.controller';
+import { validateRequest } from '../middlewares/validate-request';
+import { userValidators } from '../middlewares/user.validator';
+import { upload } from '../middlewares/upload.middleware';
 
 const router = Router();
 
 router.use(protect);
+
+// match (list of matches) apis
+router.get('/matches', getOnlineMatches);
 
 // contacts api
 router.get('/contacts', getContacts);
@@ -17,5 +25,9 @@ router.patch('/contacts/:contactId/favorite', toggleFavorite);
 // block api
 router.post('/blocks', blockUser);
 router.delete('/blocks/:blockedId', unblockUser);
+
+// profile apis
+router.get('/profile', getMyProfile);
+router.put('/profile', upload.single('avatar'), userValidators.updateProfile, validateRequest, updateProfile);
 
 export default router;
