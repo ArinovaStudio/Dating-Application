@@ -3,7 +3,7 @@ import { protect, restrictToPaid } from '../middlewares/auth.middleware';
 import { addContact, removeContact, toggleFavorite, getContacts, updateContactName } from '../controllers/contact.controller';
 import { blockUser, unblockUser } from '../controllers/block.controller';
 import { cancelSearch, getOnlineMatches, searchRandomMatch } from '../controllers/match.controller';
-import { getMyProfile, updateProfile } from '../controllers/user.controller';
+import { getCallHistory, getMyProfile, updateProfile } from '../controllers/user.controller';
 import { validateRequest } from '../middlewares/validate-request';
 import { userValidators } from '../middlewares/user.validator';
 import { upload } from '../middlewares/upload.middleware';
@@ -27,6 +27,9 @@ router.patch('/contacts/:contactId/favorite', restrictToPaid, toggleFavorite);
 // block api
 router.post('/blocks', blockUser);
 router.delete('/blocks/:blockedId', unblockUser);
+
+// calls apis
+router.get('/calls/history', getCallHistory);
 
 // profile apis
 router.get('/profile', getMyProfile);

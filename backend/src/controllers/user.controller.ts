@@ -3,6 +3,87 @@ import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 import { deleteFile } from '../utils/file.util';
 
+export const getCallHistory = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 20 } = req.query;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const calls = await prisma.call.findMany({
+      where: {
+        OR: [
+          { callerId: userId },
+          { receiverId: userId }
+        ]
+      },
+      include: {
+        caller: {
+          select: { id: true, username: true, profile: { select: { name: true, avatar: true } } }
+        },
+        receiver: {
+          select: { id: true, username: true, profile: { select: { name: true, avatar: true } } }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: Number(limit),
+      skip: skip
+    });
+
+    const totalCalls = await prisma.call.count({
+      where: {
+        OR: [
+          { callerId: userId },
+          { receiverId: userId }
+        ]
+      }
+    });
+
+    const formattedCalls = calls.map(call => {
+      const isCaller = call.callerId === userId;
+      const otherPerson = isCaller ? call.receiver : call.caller;
+
+      let durationString = "0s";
+      if (call.startTime && call.endTime) {
+        const diffMs = new Date(call.endTime).getTime() - new Date(call.startTime).getTime();
+        const minutes = Math.floor(diffMs / 60000);
+        const seconds = Math.floor((diffMs % 60000) / 1000);
+        durationString = `${minutes}m ${seconds}s`;
+      }
+
+      return {
+        id: call.id,
+        type: call.type,
+        status: call.status,
+        direction: isCaller ? 'OUTGOING' : 'INCOMING',
+        cost: isCaller ? call.tokensConsumed : 0,
+        duration: durationString,
+        startTime: call.startTime,
+        partner: {
+          id: otherPerson.id,
+          name: otherPerson.profile?.name || otherPerson.username,
+          avatar: otherPerson.profile?.avatar
+        }
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      pagination: {
+        total: totalCalls,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(totalCalls / Number(limit))
+      },
+      history: formattedCalls
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export const getMyProfile = async (req: any, res: Response, next: NextFunction) => {
   try {
     const userId = req.user.id;

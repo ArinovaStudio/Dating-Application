@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import http from 'http';
 import { prisma } from './config/prisma';
+import { callHandler } from './socket/call.handler';
 
 let io: Server;
 
@@ -18,7 +19,12 @@ export const initSocket = (server: http.Server) => {
     });
 
     socket.on('register_user', async (userId: string) => { // userId need to pass from frontend
+      if (!userId) {
+        return;
+      }
+
       socket.data.userId = userId;
+      socket.join(userId);
 
       await prisma.user.update({
         where: { id: userId },
@@ -30,8 +36,13 @@ export const initSocket = (server: http.Server) => {
     });
 
     socket.on('join_room', (roomId) => { // conversationId need to pass from frontend
+      if (!roomId) {
+        return;
+      }
       socket.join(roomId);
     });
+
+    callHandler(io, socket); // call handler
 
     socket.on('disconnect', async () => {
       const userId = socket.data.userId;
