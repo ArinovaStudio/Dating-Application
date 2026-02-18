@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPlan, getAllPlans, updatePlan, deletePlan, updateSystemConfig, getSystemConfig, getAllUsers, toggleUserStatus, editUser, deleteUser } from '../controllers/admin.controller';
+import { createPlan, getAllPlans, updatePlan, deletePlan, updateSystemConfig, getSystemConfig, getAllUsers, toggleUserStatus, editUser, deleteUser, getAnalytics } from '../controllers/admin.controller';
 import { protect, restrictTo } from '../middlewares/auth.middleware';
 import { adminValidators } from '../middlewares/admin.validator';
 import { validateRequest } from '../middlewares/validate-request';
@@ -11,6 +11,9 @@ router.get('/plans', getAllPlans);
 
 router.use(protect);
 router.use(restrictTo('ADMIN'));
+
+// dashboard apis
+router.get('/analytics', getAnalytics);
 
 // plan apis
 router.post('/plans', adminValidators.createPlan, validateRequest, createPlan);

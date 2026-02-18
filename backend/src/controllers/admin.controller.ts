@@ -292,3 +292,101 @@ export const updateSystemConfig = async (req: Request, res: Response, next: Next
     next(error);
   }
 };
+
+const calculateChange = (current: number, previous: number) => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Number((((current - previous) / previous) * 100).toFixed(2));
+};
+
+export const getAnalytics = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const [totalUsers, usersLast7Days, usersPrevious7Days] = await Promise.all([
+      prisma.user.count({ where: { role: 'USER' } }),
+      prisma.user.count({ where: { role: 'USER', createdAt: { gte: sevenDaysAgo } } }),
+      prisma.user.count({ where: { role: 'USER', createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } } })
+    ]);
+
+    const activeSubsCount = await prisma.subscription.count({ where: { isActive: true } });
+    const subscriptions = await prisma.subscription.findMany({
+      include: { plan: true }
+    });
+
+    let totalRevenue = 0;
+    let revLast7Days = 0;
+    let revPrevious7Days = 0;
+    let subsLast7Days = 0;
+    let subsPrevious7Days = 0;
+
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    
+    const monthlyData = months.map(m => ({ date: m, revenue: 0 }));
+    const weeklyData: { date: string, revenue: number }[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      weeklyData.push({ date: days[d.getDay()], revenue: 0 });
+    }
+
+    subscriptions.forEach((sub) => {
+      const price = sub.plan?.price || 0;
+      const subDate = new Date(sub.createdAt);
+
+      totalRevenue += price;
+
+      if (subDate.getFullYear() === currentYear) {
+        monthlyData[subDate.getMonth()].revenue += price;
+      }
+
+      if (subDate >= sevenDaysAgo) {
+        revLast7Days += price;
+        subsLast7Days += 1;
+
+        const dayName = days[subDate.getDay()];
+        const dayEntry = weeklyData.find(d => d.date === dayName);
+        if (dayEntry) dayEntry.revenue += price;
+      } 
+      else if (subDate >= fourteenDaysAgo && subDate < sevenDaysAgo) {
+        revPrevious7Days += price;
+        subsPrevious7Days += 1;
+      }
+    });
+
+    const revenueChange = calculateChange(revLast7Days, revPrevious7Days);
+    const subsChange = calculateChange(subsLast7Days, subsPrevious7Days);
+    const usersChange = calculateChange(usersLast7Days, usersPrevious7Days);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        summary: {
+          revenue: { 
+            total: totalRevenue, 
+            changePercent: revenueChange 
+          },
+          subscriptions: { 
+            total: activeSubsCount, 
+            changePercent: subsChange 
+          },
+          users: { 
+            total: totalUsers, 
+            changePercent: usersChange 
+          }
+        },
+        graphData: {
+          weekly: weeklyData,
+          monthly: monthlyData
+        }
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
