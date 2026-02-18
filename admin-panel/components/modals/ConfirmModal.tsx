@@ -22,15 +22,15 @@ interface ConfirmModalProps {
 export function ConfirmModal({ isOpen, onClose, onConfirm, title, description, confirmText = "Confirm" }: ConfirmModalProps) {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="border-[4px] border-black rounded-[16px] shadow-[6px_6px_0px_#000000]">
+      <AlertDialogContent className="rounded-xl shadow-lg border-slate-200">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-xl font-bold">{title}</AlertDialogTitle>
-          <AlertDialogDescription className="text-slate-600 font-medium">
+          <AlertDialogTitle className="text-xl font-bold text-slate-900">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-slate-500 font-medium">
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose} className="border-[2px] border-black font-bold">
+        <AlertDialogFooter className="mt-4">
+          <AlertDialogCancel onClick={onClose} className="rounded-lg font-semibold">
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction 
@@ -38,7 +38,7 @@ export function ConfirmModal({ isOpen, onClose, onConfirm, title, description, c
               onConfirm();
               onClose();
             }}
-            className="bg-[#FF4B4B] text-white hover:bg-red-600 border-[2px] border-black font-bold"
+            className="rounded-lg bg-red-500 text-white hover:bg-red-600 font-semibold"
           >
             {confirmText}
           </AlertDialogAction>

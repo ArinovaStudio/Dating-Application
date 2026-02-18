@@ -43,7 +43,7 @@ export default function Sidebar() {
         <div className="flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow">
           <HeartPulse className="h-6 w-6" />
         </div>
-        <h1 className="text-xl uppercase font-bold tracking-tight">Admin</h1>
+        <h1 className="text-xl uppercase font-bold tracking-tight">Dating App</h1>
       </div>
 
       {/* Navigation */}

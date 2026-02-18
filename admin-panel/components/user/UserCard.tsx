@@ -28,8 +28,14 @@ export default function UserOverviewCard({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Badge variant={user.isPaidMember ? "default" : "secondary"} className={user.isPaidMember ? "bg-amber-500 hover:bg-amber-600" : ""}>
-            {user.isPaidMember ? (user.subscription?.plan?.name || "Premium") : "Free User"}
+          <Badge 
+            className={
+              user.subscription?.plan?.name?.toLowerCase().includes("free") || !user.isPaidMember
+                ? "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50" 
+                : "bg-yellow-400 text-yellow-950 border-transparent hover:bg-yellow-500 shadow-sm"
+            }
+          >
+            {user.isPaidMember ? (user.subscription?.plan?.name || "Premium") : "-"}
           </Badge>
           <Badge variant={user.status === "ACTIVE" ? "outline" : "destructive"} className={user.status === "ACTIVE" ? "border-emerald-500 text-emerald-600" : ""}>
             {user.status}

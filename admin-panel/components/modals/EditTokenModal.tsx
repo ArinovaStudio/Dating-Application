@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,29 +17,25 @@ interface EditTokenModalProps {
 
 export function EditTokenModal({ isOpen, onClose, user, onSuccess }: EditTokenModalProps) {
   const [tokens, setTokens] = useState<number>(0);
-  const [planId, setPlanId] = useState<string>("");
+  const [planId, setPlanId] = useState<string>("none");
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 1. Fetch available plans when the modal opens
   useEffect(() => {
     if (isOpen) {
       api.get("/api/admin/plans")
-        .then((res) => {
-          setPlans(res.data.plans || res.data || []);
-        })
+        .then((res) => setPlans(res.data.plans || res.data || []))
         .catch((err) => console.error("Failed to fetch plans", err));
     }
   }, [isOpen]);
 
-  // 2. Sync user's current data when the modal opens
   useEffect(() => {
     if (user) {
       setTokens(user.wallet?.balance || 0);
-      setPlanId(user.subscription?.planId || ""); 
+      setPlanId(user.subscription?.planId || "none"); 
     } else {
       setTokens(0);
-      setPlanId("");
+      setPlanId("none");
     }
   }, [user, isOpen]);
 
@@ -48,12 +44,11 @@ export function EditTokenModal({ isOpen, onClose, user, onSuccess }: EditTokenMo
     setLoading(true);
     try {
       const payload: any = { tokens: Number(tokens) };
-      if (planId) {
+      if (planId && planId !== "none") {
         payload.planId = planId;
       }
 
       const res = await api.put(`/api/admin/users/${user.id}`, payload);
-      
       if (res.data.success) {
         toast.success(`Account updated for ${user.username}`);
         onSuccess(); 
@@ -68,57 +63,58 @@ export function EditTokenModal({ isOpen, onClose, user, onSuccess }: EditTokenMo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="border-[4px] border-black rounded-[16px] shadow-[6px_6px_0px_#000000] sm:max-w-[425px]">
+      <DialogContent className="rounded-2xl border-none shadow-xl sm:max-w-[600px] p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-black uppercase">Edit Account</DialogTitle>
-          <p className="text-sm text-slate-500 font-medium leading-snug">
-            Adjust the token balance and subscription plan for <strong className="text-black">{user?.username}</strong>.
-          </p>
+          <DialogTitle className="text-xl font-bold text-slate-900">
+            Edit Account
+          </DialogTitle>
+          <DialogDescription className="font-medium text-slate-500">
+            Adjust the token balance and subscription plan for {user?.username}.
+          </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-6 py-2">
+        <div className="grid grid-cols-1 gap-5 py-2">
           {/* Token Input */}
-          <div className="space-y-2">
-            <Label className="text-base font-bold">Token Balance</Label>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className="font-semibold text-slate-700">Token Balance</Label>
             <Input 
               type="number" 
               value={tokens} 
               onChange={(e) => setTokens(Number(e.target.value))} 
-              // Added w-full, h-14, and uniform padding
-              className="w-full h-14 px-4 border-[3px] border-black rounded-lg text-lg font-bold focus-visible:ring-[#FF4B4B]"
+              className="rounded-lg border-slate-300 w-full"
             />
           </div>
 
           {/* Plan Select */}
-          <div className="space-y-2">
-            <Label className="text-base font-bold">Subscription Plan</Label>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label className="font-semibold text-slate-700">Subscription Plan</Label>
             <Select value={planId} onValueChange={setPlanId}>
-              {/* Added w-full, h-14, and uniform padding to match the Input exactly */}
-              <SelectTrigger className="w-full h-14 px-4 border-[3px] border-black rounded-lg text-lg font-bold focus:ring-[#FF4B4B]">
+              <SelectTrigger className="rounded-lg border-slate-300 w-full">
                 <SelectValue placeholder="Select a plan..." />
               </SelectTrigger>
-              <SelectContent className="border-[3px] border-black rounded-xl shadow-[4px_4px_0px_#000000]">
-                {/* Only renders the mapped plans from the API */}
+              <SelectContent>
                 {plans.map((plan) => (
-                  <SelectItem key={plan.id} value={plan.id} className="font-semibold cursor-pointer text-base">
+                  <SelectItem key={plan.id} value={plan.id}>
                     {plan.name} (₹{plan.price})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             
-            {/* Disclaimer Text */}
-            <p className="text-[13px] font-bold text-slate-500 bg-slate-100 p-3 rounded-md border border-slate-200 mt-2">
-              <span className="text-[#FF4B4B] uppercase tracking-wider">Note:</span> Changing the plan will <span className="underline">not</span> reset anything related to the user's account history.
-            </p>
+            {/* Note Box matching the Feature Access container style */}
+            <div className="mt-5 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+              <p className="text-sm font-medium text-slate-500">
+                <span className="font-bold text-slate-700">Note:</span> Changing the plan will not reset anything related to the user's account history.
+              </p>
+            </div>
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 mt-4">
-          <Button variant="outline" onClick={onClose} className="border-[2px] border-black font-bold hover:bg-slate-100 h-11">
+        <DialogFooter className="mt-2">
+          <Button variant="outline" onClick={onClose} className="rounded-lg font-semibold border-slate-300 h-10 px-5">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={loading} className="h-11 bg-[#A5F3A0] hover:bg-[#8ee089] text-black border-[2px] border-black font-bold shadow-[2px_2px_0px_#000000] hover:translate-y-[2px] hover:shadow-none transition-all">
+          <Button onClick={handleSave} disabled={loading} className="rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-semibold h-10 px-6">
             {loading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>

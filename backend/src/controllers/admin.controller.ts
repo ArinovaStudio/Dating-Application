@@ -73,15 +73,24 @@ export const deletePlan = async (req: Request<IdParams>, res: Response, next: Ne
   try {
     const { id } = req.params;
 
-    const plan = await prisma.plan.findUnique({ where: { id } });
+    const plan = await prisma.plan.findUnique({ 
+      where: { id },
+      include: {
+        _count: {
+          select: { subscriptions: true }
+        }
+      }
+    });
 
     if (!plan) {
       return next(new AppError('Plan not found', 404));
     }
 
-    await prisma.plan.delete({
-      where: { id }
-    });
+    if (plan._count.subscriptions > 0) {
+      return next(new AppError('Plan is in use. Try editing it.', 400));
+    }
+
+    await prisma.plan.delete({ where: { id } });
 
     res.status(200).json({ success: true, message: 'Plan deleted successfully'});
   } catch (error) {
