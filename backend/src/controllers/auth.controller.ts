@@ -136,6 +136,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return next(new AppError('Incorrect email or password', 401));
     }
 
+    if (user.status === 'SUSPENDED') {
+      return next(new AppError('Your account has been suspended by the administrator.', 403));
+    }
+
     createSendToken(user, 200, res, 'Logged in successfully');
 
   } catch (error) {

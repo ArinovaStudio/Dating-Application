@@ -25,7 +25,16 @@ export const callHandler = (io: Server, socket: Socket) => {
             return;
         }
 
-        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const user = await prisma.user.findUnique({ 
+            where: { id: userId },
+            include: {
+                subscription: {
+                    where: { isActive: true },
+                    include: { plan: true }
+                }
+            }
+        });
+
         if (!user){
             socket.emit('call_error', { message: 'User not found' });
             return;
@@ -42,9 +51,20 @@ export const callHandler = (io: Server, socket: Socket) => {
             return;
         }
 
-        const isPaidMember = user.isPaidMember;
-        if (!isPaidMember) {
-            socket.emit('call_error', { message: 'You are not a paid member' });
+        const activePlan = user.subscription?.plan;
+        
+        if (!user.isPaidMember || !activePlan) {
+            socket.emit('call_error', { message: 'You need an active subscription to make calls' });
+            return;
+        }
+
+        if (type === 'AUDIO' && !activePlan.canAudioCall) {
+            socket.emit('call_error', { message: 'Your current plan does not allow Audio calls' });
+            return;
+        }
+
+        if (type === 'VIDEO' && !activePlan.canVideoCall) {
+            socket.emit('call_error', { message: 'Your current plan does not allow Video calls' });
             return;
         }
 

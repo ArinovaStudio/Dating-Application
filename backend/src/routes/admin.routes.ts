@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPlan, getAllPlans, updatePlan, deletePlan, updateSystemConfig, getSystemConfig } from '../controllers/admin.controller';
+import { createPlan, getAllPlans, updatePlan, deletePlan, updateSystemConfig, getSystemConfig, getAllUsers, toggleUserStatus, editUser, deleteUser } from '../controllers/admin.controller';
 import { protect, restrictTo } from '../middlewares/auth.middleware';
 import { adminValidators } from '../middlewares/admin.validator';
 import { validateRequest } from '../middlewares/validate-request';
@@ -16,6 +16,12 @@ router.use(restrictTo('ADMIN'));
 router.post('/plans', adminValidators.createPlan, validateRequest, createPlan);
 router.put('/plans/:id', adminValidators.updatePlan, validateRequest, updatePlan);
 router.delete('/plans/:id', deletePlan);
+
+// user apis
+router.get('/users', getAllUsers);
+router.put('/users/:id', editUser);
+router.patch('/users/:id/toggle', toggleUserStatus);
+router.delete('/users/:id', deleteUser);
 
 // system config apis
 router.get('/config', getSystemConfig);

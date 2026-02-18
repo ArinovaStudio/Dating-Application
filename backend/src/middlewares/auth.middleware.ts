@@ -36,6 +36,10 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       return next(new AppError('User Not Found', 404));
     }
 
+    if (currentUser.status === 'SUSPENDED') {
+      return next(new AppError('Your account has been suspended by the administrator.', 403));
+    }
+
     req.user = currentUser;
     next();
     
