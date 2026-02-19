@@ -9,7 +9,7 @@ type IdParams = { id: string };
 export const createPlan = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, price, durationDays, tokensIncluded, messageDelay, 
-    maxImagesPerDay, canSendVideo, canAudioCall, canVideoCall } = req.body;
+    maxImagesPerDay, canSendVideo, maxVideosPerDay, canAudioCall, canVideoCall } = req.body;
 
     const existingPlan = await prisma.plan.findUnique({ where: { name } });
     if (existingPlan){
@@ -25,6 +25,7 @@ export const createPlan = async (req: Request, res: Response, next: NextFunction
         messageDelay,
         maxImagesPerDay,
         canSendVideo,
+        maxVideosPerDay: canSendVideo ? maxVideosPerDay : 0,
         canAudioCall,
         canVideoCall
       }
@@ -51,16 +52,23 @@ export const getAllPlans = async (req: Request, res: Response, next: NextFunctio
 export const updatePlan = async (req: Request<IdParams>, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    let updateData = { ...req.body };
 
     const plan = await prisma.plan.findUnique({ where: { id } });
 
     if (!plan) {
       return next(new AppError('Plan not found', 404));
     }
+
+    if (updateData.canSendVideo === false) {
+      updateData.maxVideosPerDay = 0;
+    } else if (updateData.canSendVideo === true && updateData.maxVideosPerDay === 0) {
+      updateData.maxVideosPerDay = 1; 
+    }
     
     const updatedPlan = await prisma.plan.update({
       where: { id },
-      data: req.body
+      data: updateData
     });
 
     res.status(200).json({ success: true, message: 'Plan updated successfully', plan: updatedPlan });

@@ -121,8 +121,9 @@ model Plan {
   tokensIncluded Int @default(0)
   
   messageDelay Int @default(0)
-  maxImagesPerDay Int @default(5)
+  maxImagesPerDay Int @default(5) // -1 for unlimited images
   canSendVideo Boolean @default(false)
+  maxVideosPerDay Int @default(0) // -1 for unlimited videos
   canAudioCall Boolean @default(false)
   canVideoCall Boolean @default(false)
   createdAt DateTime @default(now())

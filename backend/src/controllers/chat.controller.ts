@@ -272,8 +272,9 @@ export const sendMessage = async (req: any, res: Response, next: NextFunction) =
     const isPaid = userWithPlan?.isPaidMember || false;
     const activePlan = userWithPlan?.subscription?.plan;
 
-    const maxImages = activePlan ? activePlan.maxImagesPerDay : 5;
+    const maxImages = activePlan ? activePlan.maxImagesPerDay : 0;
     const canSendVideo = activePlan ? activePlan.canSendVideo : false;
+    const maxVideos = activePlan ? activePlan.maxVideosPerDay : 0;
 
     const systemConfig = await prisma.systemConfig.findUnique({ where: { id: 'config' } });
     const defaltFreeDelay = systemConfig ? systemConfig.defaultFreeDelay : Math.floor(Math.random() * (20000 - 8000 + 1) + 8000);
@@ -297,27 +298,48 @@ export const sendMessage = async (req: any, res: Response, next: NextFunction) =
       else if (req.file.mimetype.startsWith('video')) finalType = 'VIDEO';
       else if (req.file.mimetype.startsWith('audio')) finalType = 'AUDIO';
 
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
+      // image check
       if (finalType === 'IMAGE') {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
+        if (maxImages !== -1) {  // only run if maxImages is not -1 (unlimited)
+          const imagesSentToday = await prisma.message.count({
+            where: {
+              senderId,
+              type: 'IMAGE',
+              createdAt: { gte: startOfDay }
+            }
+          });
 
-        const imagesSentToday = await prisma.message.count({
-          where: {
-            senderId,
-            type: 'IMAGE',
-            createdAt: { gte: startOfDay }
+          if (imagesSentToday >= maxImages) {
+            throw new AppError(`You've reached your limit of ${maxImages} images per day. Upgrade your plan!`, 403);
           }
-        });
-
-        if (imagesSentToday >= maxImages) {
-          throw new AppError(`You've reached your limit of ${maxImages} images per day. Upgrade your plan!`, 403);
         }
       }
 
-      if (finalType === 'VIDEO' && !canSendVideo) {
-        throw new AppError('Your current plan does not allow sending videos. Please upgrade!', 403);
+      // video check
+      if (finalType === 'VIDEO') {
+        if (!canSendVideo || maxVideos === 0) {
+          throw new AppError('Your current plan does not allow sending videos. Please upgrade!', 403);
+        }
+
+        if (maxVideos !== -1) { // Only run if maxVideos is not -1 (unlimited)
+          const videosSentToday = await prisma.message.count({
+            where: {
+              senderId,
+              type: 'VIDEO',
+              createdAt: { gte: startOfDay }
+            }
+          });
+
+          if (videosSentToday >= maxVideos) {
+            throw new AppError(`You've reached your limit of ${maxVideos} videos per day. Upgrade your plan!`, 403);
+          }
+        }
       }
 
+      // audio check
       if (finalType === 'AUDIO' && !isPaid) {
         throw new AppError('Upgrade to Premium to send Audio messages!', 403);
       }
@@ -354,7 +376,7 @@ export const sendMessage = async (req: any, res: Response, next: NextFunction) =
     }
     next(error);
   }
-};
+}; 
 
 // delete message
 export const deleteMessage = async (req: any, res: Response, next: NextFunction) => {

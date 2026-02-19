@@ -7,14 +7,31 @@ import { cn } from "@/lib/utils";
 
 export default function PlanCard({ plan, onEdit, onDelete }: { plan: any, onEdit: (p: any) => void, onDelete: (p: any) => void }) {
   
-  // Dynamically map features from the database
   const features = [
-    { text: `${plan.tokensIncluded} Free Tokens`, included: plan.tokensIncluded > 0 },
-    { text: `Max ${plan.maxImagesPerDay} Images/Day`, included: plan.maxImagesPerDay > 0 },
-    { text: plan.messageDelay === 0 ? "No Message Delay" : `${plan.messageDelay}s Message Delay`, included: plan.messageDelay === 0 },
-    { text: "Video Messaging", included: plan.canSendVideo },
-    { text: "Audio Calling", included: plan.canAudioCall },
-    { text: "Video Calling", included: plan.canVideoCall },
+    { 
+      text: plan.tokensIncluded > 0 ? `${plan.tokensIncluded} Free Tokens` : "No Free Tokens", 
+      included: plan.tokensIncluded > 0 
+    },
+    { 
+      text: plan.maxImagesPerDay === -1 ? "Unlimited Images" : `Max ${plan.maxImagesPerDay} Images/Day`, 
+      included: plan.maxImagesPerDay === -1 || plan.maxImagesPerDay > 0 
+    },
+    { 
+      text: plan.messageDelay === 0 ? "No Message Delay" : `${plan.messageDelay}s Message Delay`, 
+      included: plan.messageDelay === 0 
+    },
+    { 
+      text: !plan.canSendVideo ? "Video Messaging" : (plan.maxVideosPerDay === -1 ? "Unlimited Videos" : `Max ${plan.maxVideosPerDay} Videos/Day`), 
+      included: plan.canSendVideo 
+    },
+    { 
+      text: "Audio Calling", 
+      included: plan.canAudioCall 
+    },
+    { 
+      text: "Video Calling", 
+      included: plan.canVideoCall 
+    },
   ];
 
   return (

@@ -25,13 +25,16 @@ export const adminValidators = {
       
     body('maxImagesPerDay')
     .optional()
-    .isInt({ min: 1 })
-    .withMessage('Max images must be at least 1'),
+    .isInt({ min: -1 }),
       
     body('canSendVideo')
     .optional()
     .isBoolean()
     .withMessage('canSendVideo must be a boolean'),
+
+    body('maxVideosPerDay')
+    .optional()
+    .isInt({ min: -1 }),
       
     body('canAudioCall')
     .optional()
@@ -74,13 +77,16 @@ export const adminValidators = {
       
     body('maxImagesPerDay')
     .optional()
-    .isInt({ min: 1 })
-    .withMessage('Max images must be at least 1'),
+    .isInt({ min: -1 }),
       
     body('canSendVideo')
     .optional()
     .isBoolean()
     .withMessage('canSendVideo must be a boolean'),
+
+    body('maxVideosPerDay')
+    .optional()
+    .isInt({ min: -1 }),
       
     body('canAudioCall')
     .optional()
